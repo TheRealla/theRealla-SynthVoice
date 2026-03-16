@@ -1,0 +1,69 @@
+name: Build SynthVoice Plugin
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ published ]   # Auto-build on new releases/tags
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]  # Add ubuntu-latest later if wanted
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Install cmaj CLI (cross-platform)
+      run: |
+        # Download latest cmaj from official source (adjust URL/version as needed)
+        curl -L https://github.com/SoundStacks/cmajor/releases/latest/download/cmaj-${{ runner.os == 'Windows' && 'win' || runner.os == 'macOS' && 'mac' || 'linux' }}.zip -o cmaj.zip
+        unzip cmaj.zip -d cmaj
+        chmod +x cmaj/cmaj  # For macOS/Linux
+        echo "${{ github.workspace }}/cmaj" >> $GITHUB_PATH  # Add to PATH
+
+    - name: Install CMake
+      uses: lukka/get-cmake@v3.27.7  # Or latest stable
+
+    - name: Build with your script
+      run: python scripts/build_synthvoice_all.py
+
+    - name: Find built artifacts
+      id: artifacts
+      run: |
+        # Adjust paths based on what your script outputs (check locally once)
+        if [ "${{ runner.os }}" == "Windows" ]; then
+          ARTIFACT_PATH="Builds/SynthVoice_artefacts/Release/VST3/SynthVoice.vst3"
+        else
+          ARTIFACT_PATH="Builds/SynthVoice_artefacts/Release/VST3/SynthVoice.vst3"  # macOS similar; add .component for AU
+        fi
+        echo "path=$ARTIFACT_PATH" >> $GITHUB_OUTPUT
+        mkdir -p upload
+        cp -r "$ARTIFACT_PATH" upload/  # Or zip it: zip -r upload/SynthVoice-${{ runner.os }}.zip "$ARTIFACT_PATH"
+
+    - name: Upload artifact for this OS
+      uses: actions/upload-artifact@v4
+      with:
+        name: SynthVoice-${{ runner.os }}
+        path: upload/*
+
+    # Optional: If on release, upload to release assets
+    - name: Upload to Release (if tagged)
+      if: github.event_name == 'release' && github.event.action == 'published'
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: upload/*.zip  # Or individual files
+        tag: ${{ github.ref }}
+        overwrite: true
