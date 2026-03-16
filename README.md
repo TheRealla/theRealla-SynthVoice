@@ -82,3 +82,9 @@ MIT License — feel free to fork, modify, and use in your productions. Credit a
 Drop a star ⭐ if this inspires your beats! Let's collab on more Amorph experiments — Memphis sound meets AI DSP.
 
 🦭 Made in Memphis, TN | 2026
+
+vst, cmajor, amorph, synthesizer, audio-plugin, memphis-rap  
+
+
+
+
