@@ -1,71 +1,74 @@
 # SynthVoice by theRealla 🦭
 
-**An EMS-style Erica SynthVoice-inspired synthesizer** built with **Amorph** AI — no heavy coding required, just pure prompt magic turned into a playable VST/AU/CLAP/Standalone plugin.
+**EMS-style Erica SynthVoice-inspired synthesizer**  
+Built with **Amorph** AI → Cmajor → JUCE — turned into real plugins with zero heavy coding.
 
-Created by **Lewis Seals Jr** (aka **theRealla**), Memphis rapper, producer, and plugin experimenter under Organic Music LLC.
+Created by **Lewis Seals Jr** (aka **theRealla**), Memphis rapper, producer, and AI-plugin experimenter under Organic Music LLC.
 
-## About This Project
+## About
 
-This is my first public Amorph-generated instrument: a warm, analog-flavored synth voice reminiscent of classic EMS Synthi systems — think rich filters, modulation, and experimental sound design perfect for rap beats, ambient layers, or glitchy Memphis productions.
+My first public Amorph-generated instrument: a warm, analog-flavored synth voice inspired by classic EMS Synthi systems. Rich filters, deep modulation, experimental vibes — perfect for rap beats, ambient textures, glitchy Memphis productions, or sidechained drops.
 
-- **Prompt inspiration**: "EMS-STYLE Erica SynthVoice-like synthesizer with EMS filter, warm analog tones, versatile modulation, and sidechain-friendly dynamics"
-- **Tech stack**: Amorph (prompt → Cmajor code) → cmaj generate → JUCE export → multi-format builds
-- **Formats available**: VST3, AU (macOS), CLAP, Standalone app (Windows/macOS). AAX possible with SDK.
+- **Original Amorph prompt**  
+  "EMS-STYLE Erica SynthVoice-like synthesizer with EMS filter, warm analog tones, versatile modulation, and sidechain-friendly dynamics"
 
-Perfect for DAWs like Ableton, FL Studio, Reaper, Logic, or Pro Tools.
+- **Tech**  
+  Amorph (text prompt → Cmajor code) → `cmaj generate` → JUCE project → multi-format builds
+
+- **Formats**  
+  VST3 • AU (macOS) • CLAP • Standalone (Win/macOS) • AAX (with SDK)
+
+Works in Ableton, FL Studio, Reaper, Logic, Pro Tools, and more.
 
 ## Screenshots
 
-### Amorph in Action (Prompt to Plugin)
+(Add your real images to the `Images/` folder soon for best results!)
 
-![Amorph Interface Screenshot](images/amorph-screenshot.png)
-*(Amorph DSP sandbox: Type your idea, compile, and play — here's the lab view with generated parameters like FM Index, Ratio, Feedback, etc.)*
+### Amorph Prompt → Plugin
+*(Amorph DSP sandbox: enter idea → generate parameters like FM Index, Ratio, Feedback...)*
 
-### Generated SynthVoice UI Example
+### SynthVoice Plugin UI
+*(Compiled interface: EMS-style matrix patching, oscillators, filters, envelopes)*
 
-![SynthVoice Plugin UI](images/synthvoice-ui.png)
-*(The compiled plugin interface — classic EMS-style matrix patching, oscillators, filters, and envelope controls for deep sound sculpting.)*
+### Classic EMS Synthi Inspiration
+*(Vintage hardware reference: pin matrix, joystick, quirky oscillators — the soul of the sound)*
 
-### EMS Synthi Inspiration
+### Loaded in a DAW
+*(Ready to play — drop it on beats or experimental tracks)*
 
-![EMS Synthi Vintage Synth](images/ems-synthi.jpg)
-*(Classic EMS Synthi hardware that inspired the sound — pin matrix, joystick, quirky oscillators — my version brings that vibe into modern DAWs.)*
+## How to Build (Recommended: Use the Script)
 
-### In a DAW (Reaper/FL Example)
+1. **Prerequisites** (one-time)
+   - [cmaj CLI](https://github.com/cmajor-lang/cmajor/releases) — add to PATH
+   - [CMake](https://cmake.org/download/)
+   - [JUCE](https://juce.com/get-juce) — unzip somewhere (e.g. `~/JUCE`)
+   - (Optional) Avid AAX SDK for Pro Tools format
 
-![Plugin in DAW](images/plugin-in-daw.png)
-*(Loaded in a DAW session — ready to drop on beats or experimental tracks.)*
-
-(Upload your actual screenshots to `/images/` folder in the repo for best results. If you don't have them yet, grab similar ones from Amorph demos or EMS pics online.)
-
-## How to Build & Use
-
-1. **Prerequisites** (one-time setup):
-   - Download **cmaj** CLI: https://github.com/cmajor-lang/cmajor/releases
-   - Install **CMake** (cmake.org)
-   - Download **JUCE** framework (juce.com)
-   - (Optional) Avid AAX SDK for Pro Tools support
-
-2. **Build the Plugin**:
-   - Clone this repo
-   - Run the builder script (or manually):
+2. **Easiest way — use the builder script**
+   - Download `build_synthvoice_all.py` from this repo (or the separate script repo if separate)
+   - Place it next to `SynthVoice.cmajorpatch`
+   - Run:
      ```bash
-     cmaj generate --target=juce SynthVoice.cmajorpatch --output=Builds
-     cd Builds/SynthVoice_JUCE
-     cmake -B Build -DJUCE_BUILD_VST3=ON -DJUCE_BUILD_AU=ON -DJUCE_BUILD_CLAP=ON
-     cmake --build Build --config Release
+     python build_synthvoice_all.py
      ```
-   - Find your plugins in `Build/` (e.g., `SynthVoice.vst3`, `SynthVoice.component`, etc.)
+     Or with options:
+     ```bash
+     python build_synthvoice_all.py --juce ~/JUCE --aax-sdk ~/AAX_SDK
+     ```
 
-For a one-file builder .exe (Windows), check my separate script repo or use PyInstaller locally.
+   → Builds VST3 / Standalone / CLAP / AU (macOS) automatically. Check `Builds/` folder for plugins.
 
-## Installation
+3. **Manual build (alternative)**
+   ```bash
+   # Generate JUCE project
+   cmaj generate --target=juce SynthVoice.cmajorpatch --output=Builds --jucePath ~/JUCE
 
-- Copy the built plugin files to your DAW's plugin folder:
-  - Windows: `C:\Program Files\Common Files\VST3\`
-  - macOS: `~/Library/Audio/Plug-Ins/Components/` (AU) or `/VST3/`
-- Rescan plugins in your DAW.
-
+   # Build
+   cd Builds/SynthVoice_JUCE
+   cmake -B Build -DCMAKE_BUILD_TYPE=Release \
+     -DJUCE_BUILD_VST3=ON -DJUCE_BUILD_CLAP=ON -DJUCE_BUILD_Standalone=ON
+   cmake --build Build --config Release --parallel
+   
 ## License
 
 MIT License — feel free to fork, modify, and use in your productions. Credit appreciated: "SynthVoice by theRealla (Lewis Seals)".
