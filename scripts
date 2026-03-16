@@ -1,116 +1,83 @@
 #!/usr/bin/env python3
 """
-build_synthvoice_all.py
-───────────────────────
+build_synthvoice_all.py - Automate cmaj generate + JUCE/CMake build for SynthVoice plugin
 
-One-command builder for theRealla's SynthVoice (Amorph → Cmajor → JUCE multi-format plugins)
-
-Supported targets: VST3, Standalone, CLAP, AU (macOS only), AAX (if SDK present)
-
-Usage examples:
-  python build_synthvoice_all.py
-  python build_synthvoice_all.py --patch SynthVoice.cmajorpatch --juce ~/JUCE
-  python build_synthvoice_all.py --help
+Usage:
+  python scripts/build_synthvoice_all.py [--juce-path /path/to/JUCE] [--output-dir Builds/JUCE_SynthVoice]
 """
 
-import argparse
 import subprocess
+import argparse
+import os
 import sys
-from pathlib import Path
+import shutil
 
-# ────────────────────────────────────────────────
-#  Configuration – change these defaults if needed
-# ────────────────────────────────────────────────
-
-DEFAULT_PATCH_NAME   = "SynthVoice.cmajorpatch"
-DEFAULT_JUCE_FOLDER  = Path.home() / "JUCE"               # most common location
-DEFAULT_OUTPUT_BASE  = Path("Builds")
-
-SUPPORTED_FORMATS = [
-    "VST3",
-    "Standalone",
-    "CLAP",
-]
-
-# Add these conditionally (platform / SDK checks happen later)
-if sys.platform == "darwin":
-    SUPPORTED_FORMATS.append("AU")
-
-# AAX is only added if the user provides --aax-sdk or we detect it
-AAX_OPTIONAL = "AAX"
-
-# ────────────────────────────────────────────────
-#  ANSI colors for nicer console output
-# ────────────────────────────────────────────────
-
-class c:
-    HEADER    = '\033[95m'
-    OKBLUE    = '\033[94m'
-    OKCYAN    = '\033[96m'
-    OKGREEN   = '\033[92m'
-    WARNING   = '\033[93m'
-    FAIL      = '\033[91m'
-    ENDC      = '\033[0m'
-    BOLD      = '\033[1m'
-    UNDERLINE = '\033[4m'
-
-# ────────────────────────────────────────────────
-#  Utility functions
-# ────────────────────────────────────────────────
-
-def run(cmd, cwd=None, check=True, capture_output=False):
-    """Run a command and print it nicely"""
-    print(f"  {c.OKCYAN}▶{c.ENDC}  {' '.join(str(arg) for arg in cmd)}")
-    try:
-        result = subprocess.run(
-            cmd,
-            cwd=cwd,
-            check=check,
-            text=True,
-            capture_output=capture_output
-        )
-        if capture_output:
-            return result.stdout.strip()
-        return result
-    except subprocess.CalledProcessError as e:
-        print(f"\n{c.FAIL}Command failed with exit code {e.returncode}{c.ENDC}")
-        print(e.stderr if e.stderr else "(no error output captured)")
-        raise
-
-def which(cmd):
-    """Like unix 'which' – returns path if command exists in PATH"""
-    try:
-        return run(["which", cmd], capture_output=True, check=False) or None
-    except:
-        return None
-
-# ────────────────────────────────────────────────
-#  Main logic
-# ────────────────────────────────────────────────
+def run_command(cmd, cwd=None, check=True):
+    """Run a shell command and print output."""
+    print(f"Running: {' '.join(cmd)}")
+    result = subprocess.run(cmd, cwd=cwd, check=check, capture_output=True, text=True)
+    if result.stdout.strip():
+        print(result.stdout)
+    if result.stderr.strip():
+        print("STDERR:", result.stderr, file=sys.stderr)
+    return result
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Build theRealla SynthVoice plugin in multiple formats",
-        formatter_class=argparse.RawTextHelpFormatter
-    )
-    parser.add_argument("--patch", type=str, default=DEFAULT_PATCH_NAME,
-                        help=f"Path to .cmajorpatch file (default: {DEFAULT_PATCH_NAME})")
-    parser.add_argument("--juce", type=str, default=str(DEFAULT_JUCE_FOLDER),
-                        help=f"Path to JUCE folder (default: {DEFAULT_JUCE_FOLDER})")
-    parser.add_argument("--aax-sdk", type=str, default=None,
-                        help="Path to AAX SDK folder (enables AAX build)")
-    parser.add_argument("--output", type=str, default=str(DEFAULT_OUTPUT_BASE),
-                        help=f"Base output folder (default: {DEFAULT_OUTPUT_BASE})")
-    parser.add_argument("--formats", nargs="+",
-                        help="Only build these formats (space separated)")
-
+    parser = argparse.ArgumentParser(description="Build SynthVoice plugin from Cmajor patch")
+    parser.add_argument("--juce-path", default=None, help="Path to local JUCE folder (optional)")
+    parser.add_argument("--output-dir", default="Generated/JUCE_SynthVoice", help="Where to generate JUCE project")
+    parser.add_argument("--build-type", default="Release", choices=["Debug", "Release"], help="CMake build type")
+    parser.add_argument("--clean", action="store_true", help="Clean previous generated folder before generating")
     args = parser.parse_args()
 
-    patch_file = Path(args.patch).resolve()
-    juce_path  = Path(args.juce).resolve()
-    output_base = Path(args.output).resolve()
+    # Paths
+    patch_file = "SynthVoice.cmajorpatch"
+    if not os.path.exists(patch_file):
+        sys.exit(f"Error: {patch_file} not found in current directory. Run from repo root.")
 
-    # ── Validation ───────────────────────────────────────
+    output_dir = args.output_dir
+    build_dir = os.path.join(output_dir, "build")
 
-    if not patch_file.is_file():
-        print(f"\n{c.FAIL}Error:{c.ENDC} Patch file not found: {patch_file
+    # Optional: Clean previous generation
+    if args.clean and os.path.exists(output_dir):
+        print(f"Cleaning previous output: {output_dir}")
+        shutil.rmtree(output_dir)
+
+    # Step 1: Generate JUCE project from Cmajor patch
+    cmaj_cmd = ["cmaj", "generate", "--target=juce", "--output", output_dir, patch_file]
+    if args.juce_path:
+        cmaj_cmd.extend(["--jucePath", args.juce_path])
+    
+    try:
+        run_command(cmaj_cmd)
+    except subprocess.CalledProcessError as e:
+        sys.exit(f"cmaj generate failed with code {e.returncode}. Check cmaj CLI installation and patch syntax.")
+
+    # Step 2: CMake configure
+    cmake_configure = [
+        "cmake", "-S", output_dir, "-B", build_dir,
+        f"-DCMAKE_BUILD_TYPE={args.build_type}",
+        "-DJUCE_BUILD_VST3=ON",
+        "-DJUCE_BUILD_AU=ON",          # macOS only, ignored on Windows
+        "-DJUCE_BUILD_CLAP=ON",
+        "-DJUCE_BUILD_Standalone=ON",
+    ]
+    run_command(cmake_configure)
+
+    # Step 3: Build
+    cmake_build = [
+        "cmake", "--build", build_dir,
+        "--config", args.build_type,
+        "--parallel",  # Use all cores
+    ]
+    run_command(cmake_build)
+
+    print("\nBuild complete!")
+    print(f"Plugins should be in: {os.path.join(build_dir, 'SynthVoice_artefacts')}")
+    print(" - VST3: SynthVoice.vst3")
+    print(" - AU (macOS): SynthVoice.component")
+    print(" - CLAP: SynthVoice.clap")
+    print(" - Standalone: SynthVoice.exe / SynthVoice.app")
+
+if __name__ == "__main__":
+    main()
